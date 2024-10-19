@@ -2,9 +2,10 @@ import {
   type Project,
   ProjectConnector,
   type ProjectId,
+  type UserId,
 } from "@projects-manager/core";
 import { ok, type Result } from "neverthrow";
-import type { MongoService } from "../mongo/service.ts";
+import { MongoService } from "../mongo/service.ts";
 import { z } from "zod";
 import { err } from "neverthrow";
 import { ObjectId } from "mongodb";
@@ -17,13 +18,11 @@ const schema = z.object({
   updatedAt: z.date(),
 });
 
-type Document = z.infer<typeof schema>;
-
 export class ProjectRepository extends ProjectConnector {
   constructor(private mongoService: MongoService) {
     super();
   }
-  async getAll(): Promise<Result<Project[], Error>> {
+  async getAll(userId: UserId): Promise<Result<Project[], Error>> {
     const result = await this.mongoService.getMany(
       "projects",
       z.object({
@@ -33,6 +32,7 @@ export class ProjectRepository extends ProjectConnector {
         createdAt: z.date(),
         updatedAt: z.date(),
       }),
+      { userId: MongoService.getIdFromString(userId) },
     );
 
     if (result.isErr()) {
@@ -47,10 +47,13 @@ export class ProjectRepository extends ProjectConnector {
     );
   }
 
-  async getById(id: ProjectId): Promise<Result<Project, Error>> {
+  async getById(id: ProjectId, user: UserId): Promise<Result<Project, Error>> {
     const result = await this.mongoService.getOne(
       "projects",
-      { _id: new ObjectId(id) },
+      {
+        _id: MongoService.getIdFromString(id),
+        userId: MongoService.getIdFromString(user),
+      },
       schema,
     );
     if (result.isErr()) {
@@ -64,12 +67,18 @@ export class ProjectRepository extends ProjectConnector {
       id,
     });
   }
+
   async create(
     project: Omit<Project, "id">,
+    userId: UserId,
   ): ReturnType<ProjectConnector["create"]> {
-    const result = await this.mongoService.insertOne("projects", project);
-    return result.map(() => undefined);
+    const result = await this.mongoService.insertOne("projects", {
+      ...project,
+      userId: MongoService.getIdFromString(userId),
+    });
+    return result.map((id) => id as ProjectId);
   }
+
   update(_project: Project): Promise<Result<void, Error>> {
     return Promise.resolve(ok(undefined));
   }

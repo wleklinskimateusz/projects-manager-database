@@ -2,6 +2,7 @@ import "jsr:@std/dotenv/load";
 import { type Document, type Filter, MongoClient } from "mongodb";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
+import { ObjectId } from "mongodb";
 
 export class ParseError extends Error {
   constructor(public override cause: z.ZodError) {
@@ -19,6 +20,14 @@ export class MongoService {
       throw new Error("MONGO_CONNECTION_STRING is not set");
     }
     this.client = new MongoClient(connectionString);
+  }
+
+  static getIdFromString(id: string) {
+    return new ObjectId(id);
+  }
+
+  static generateId() {
+    return new ObjectId().toString();
   }
 
   async aggregate<T extends Document>(
