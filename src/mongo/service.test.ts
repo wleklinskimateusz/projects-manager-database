@@ -15,13 +15,13 @@ describe("MongoService", () => {
       throw new Error("Failed to insert the entry");
     }
 
-    expect(insertResult.value).toBeInstanceOf(String);
+    expect(insertResult.value).toMatch(/^[0-9a-f]{24}$/);
 
     const getOneResult = await service.getOne(
       "test",
       { name: "Test" },
       z.object({
-        _id: z.string(),
+        id: z.string(),
         name: z.string(),
       }),
     );
@@ -40,19 +40,18 @@ describe("MongoService", () => {
     const getManyResult = await service.getMany(
       "test",
       z.object({
-        _id: z.string(),
+        id: z.string(),
         name: z.string(),
       }),
     );
 
     if (getManyResult.isErr()) {
-      console.error(getManyResult.error);
       throw new Error("Failed to get the entries");
     }
 
     expect(getManyResult.value).toEqual([
-      { name: "Test", _id: expect.any(String) },
-      { name: "another test", _id: expect.any(String) },
+      { name: "Test", id: expect.any(String) },
+      { name: "another test", id: expect.any(String) },
     ]);
   });
 
@@ -86,7 +85,7 @@ describe("MongoService", () => {
       "test",
       { name: "Test" },
       z.object({
-        _id: z.string(),
+        id: z.string(),
         name: z.string(),
       }),
     );

@@ -3,6 +3,12 @@ import { type Document, type Filter, MongoClient } from "mongodb";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 
+export class ParseError extends Error {
+  constructor(public override cause: z.ZodError) {
+    super("Failed to parse the result");
+  }
+}
+
 export class MongoService {
   client: MongoClient;
 
@@ -32,7 +38,7 @@ export class MongoService {
     if (result.isErr()) return err(result.error);
 
     const parsed = z.array(schema).safeParse(result.value);
-    if (!parsed.success) return err(new Error("Failed to parse the result"));
+    if (!parsed.success) return err(new ParseError(parsed.error));
 
     return ok(parsed.data);
   }
@@ -40,7 +46,7 @@ export class MongoService {
   async insertOne<T extends Document>(
     collection: string,
     document: T,
-  ): Promise<Result<void, Error>> {
+  ): Promise<Result<string, Error>> {
     const result = await this.withConnection(async (client) => {
       const db = client.db();
       const result = await db.collection(collection).insertOne(document);
@@ -48,7 +54,14 @@ export class MongoService {
     });
 
     if (result.isErr()) return err(result.error);
-    return ok(undefined);
+
+    const id = result.value.insertedId.toString();
+
+    if (!id || typeof id !== "string") {
+      return err(new Error("failed to return the id"));
+    }
+
+    return ok(id);
   }
 
   async getOne<T extends Document>(
@@ -72,9 +85,7 @@ export class MongoService {
 
     const parsed = schema.safeParse(value);
     if (!parsed.success) {
-      const error = new Error("Failed to parse the result");
-      error.cause = parsed.error;
-      return err(error);
+      return err(new ParseError(parsed.error));
     }
 
     return ok(parsed.data);
@@ -96,7 +107,7 @@ export class MongoService {
     const parsed = z
       .array(schema)
       .safeParse(result.value.map(MongoService.transformId));
-    if (!parsed.success) return err(new Error("Failed to parse the result"));
+    if (!parsed.success) return err(new ParseError(parsed.error));
 
     return ok(parsed.data);
   }
@@ -113,9 +124,12 @@ export class MongoService {
   }
 
   private static transformId<T extends Document>(document: T) {
-    return "_id" in document
-      ? { ...document, _id: document._id.toString() }
+    const result = "_id" in document
+      ? { ...document, id: document._id.toString() }
       : document;
+
+    delete result._id;
+    return result;
   }
 
   private withConnection = async <T>(

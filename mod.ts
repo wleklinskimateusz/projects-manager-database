@@ -1,1 +1,1 @@
-export { ProjectRepository } from "./repositories/project.ts";
+export { ProjectRepository } from "./src/repositories/project.ts";
