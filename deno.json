@@ -4,7 +4,7 @@
     "test-coverage": "rm -rf coverage && deno test -A --coverage && deno coverage --detailed"
   },
   "name": "@projects-manager/database",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {

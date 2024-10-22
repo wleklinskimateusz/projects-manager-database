@@ -106,7 +106,6 @@ describe("MongoService", () => {
     });
 
     await service.insertOne("test", original);
-    console.log("ORYG", original);
     const { id } = await service.getOne("test", { name: "Test" }, schema).then((
       result,
     ) => result._unsafeUnwrap());
@@ -118,8 +117,6 @@ describe("MongoService", () => {
     const testData = await service.getOne("test", { _id }, schema).then((
       result,
     ) => result._unsafeUnwrap());
-
-    console.log(testData);
 
     expect(testData).toEqual({ id, ...original });
   });
