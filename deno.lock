@@ -1,7 +1,7 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@projects-manager/core@~0.1.4": "0.1.4",
+    "jsr:@projects-manager/core@~0.1.5": "0.1.5",
     "jsr:@std/assert@1": "1.0.6",
     "jsr:@std/assert@^1.0.6": "1.0.6",
     "jsr:@std/data-structures@^1.0.4": "1.0.4",
@@ -18,8 +18,8 @@
     "npm:zod@^3.23.8": "3.23.8"
   },
   "jsr": {
-    "@projects-manager/core@0.1.4": {
-      "integrity": "147bd07403b2055fdd4938647c8ef96471a0de88c2d7d33a5081253e9db4d9ff",
+    "@projects-manager/core@0.1.5": {
+      "integrity": "25df4334b6279b265ef205c03ba1df32b33f6714e753f4ee35692bdbba870ae7",
       "dependencies": [
         "jsr:@ts-rex/bcrypt",
         "npm:neverthrow"
@@ -141,7 +141,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@projects-manager/core@~0.1.4",
+      "jsr:@projects-manager/core@~0.1.5",
       "jsr:@std/assert@1",
       "jsr:@std/testing@^1.0.3",
       "npm:mongodb@^6.9.0",

@@ -167,44 +167,63 @@ describe("ProjectRepository", () => {
     });
   });
 
-  // describe("update", () => {
-  //   it("should be able to update a project", async () => {
-  //     const userId = MongoService.generateId() as UserId;
-  //     const projectId = await insertProject("Project", userId);
-  //     const updateName = "Updated";
+  describe("update", () => {
+    it("should be able to update a project", async () => {
+      const userId = MongoService.generateId() as UserId;
+      const projectId = await insertProject("Project", userId);
+      const updateName = "Updated";
 
-  //     const newProject = {
-  //       id: projectId,
-  //       name: updateName,
-  //       description: "Description",
-  //       createdAt: new Date(),
-  //       updatedAt: new Date(),
-  //     } satisfies Project;
+      const newProject = {
+        id: projectId,
+        name: updateName,
+        description: "Description",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } satisfies Project;
 
-  //     await respository.update(newProject);
+      await respository.update(newProject);
 
-  //     const result = await respository.getById(projectId, userId);
-  //     if (!result.isOk()) {
-  //       throw result.error;
-  //     }
+      const result = await respository.getById(projectId, userId);
+      if (!result.isOk()) {
+        throw result.error;
+      }
 
-  //     expect(result.value.name).toBe(updateName);
-  //   });
+      expect(result.value.name).toBe(updateName);
+    });
 
-  //   it("should return an error if the project does not exist", async () => {
-  //     const result = await respository.update({
-  //       id: MongoService.generateId() as ProjectId,
-  //       name: "Updated",
-  //       description: "Description",
-  //       createdAt: new Date(),
-  //       updatedAt: new Date(),
-  //     });
+    it("should return an error if the project does not exist", async () => {
+      const result = await respository.update({
+        id: MongoService.generateId() as ProjectId,
+        name: "Updated",
+        description: "Description",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
 
-  //     if (result.isOk()) {
-  //       throw new Error("Expected an error");
-  //     }
+      if (result.isOk()) {
+        throw new Error("Expected an error");
+      }
 
-  //     expect(result.error).toBeInstanceOf(Deno.errors.NotFound);
-  //   });
-  // });
+      expect(result.error).toBeInstanceOf(Deno.errors.NotFound);
+    });
+  });
+
+  describe("delete", () => {
+    it("should be able to delete a project", async () => {
+      const userId = MongoService.generateId() as UserId;
+      const projectId = await insertProject("Project", userId);
+
+      const deleteResult = await respository.delete(projectId);
+      if (!deleteResult.isOk()) {
+        throw deleteResult.error;
+      }
+
+      const getResult = await respository.getById(projectId, userId);
+      if (getResult.isOk()) {
+        throw new Error("Expected an error");
+      }
+
+      expect(getResult.error).toBeInstanceOf(Deno.errors.NotFound);
+    });
+  });
 });

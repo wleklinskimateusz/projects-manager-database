@@ -3,26 +3,36 @@ import {
   ProjectConnector,
   type ProjectId,
   type UserId,
+  type WrongId,
 } from "@projects-manager/core";
 import { ok, type Result } from "neverthrow";
 import { MongoService } from "../mongo/service.ts";
 import { z } from "zod";
 import { err } from "neverthrow";
-import { ObjectId } from "mongodb";
+import type { MongoError, ObjectId } from "mongodb";
 
 const schema = z.object({
-  id: z.string().brand("ProjectId"),
+  id: z.string(),
   name: z.string(),
   description: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 
+type MongoProject = Omit<z.infer<typeof schema>, "id"> & {
+  userId: ObjectId;
+  _id: ObjectId;
+};
+
 export class ProjectRepository extends ProjectConnector {
   constructor(private mongoService: MongoService) {
     super();
   }
   async getAll(userId: UserId): Promise<Result<Project[], Error>> {
+    const userIdResult = MongoService.getIdFromString(userId);
+    if (userIdResult.isErr()) {
+      return err(userIdResult.error);
+    }
     const result = await this.mongoService.getMany(
       "projects",
       z.object({
@@ -32,7 +42,7 @@ export class ProjectRepository extends ProjectConnector {
         createdAt: z.date(),
         updatedAt: z.date(),
       }),
-      { userId: MongoService.getIdFromString(userId) },
+      { userId: userIdResult.value },
     );
 
     if (result.isErr()) {
@@ -48,11 +58,24 @@ export class ProjectRepository extends ProjectConnector {
   }
 
   async getById(id: ProjectId, user: UserId): Promise<Result<Project, Error>> {
-    const result = await this.mongoService.getOne(
+    const userIdResult = MongoService.getIdFromString(user);
+    if (userIdResult.isErr()) {
+      return err(userIdResult.error);
+    }
+
+    const projectIdResult = MongoService.getIdFromString(id);
+    if (projectIdResult.isErr()) {
+      return err(projectIdResult.error);
+    }
+
+    const result = await this.mongoService.getOne<
+      MongoProject,
+      z.infer<typeof schema>
+    >(
       "projects",
       {
-        _id: MongoService.getIdFromString(id),
-        userId: MongoService.getIdFromString(user),
+        _id: projectIdResult.value,
+        userId: userIdResult.value,
       },
       schema,
     );
@@ -72,17 +95,38 @@ export class ProjectRepository extends ProjectConnector {
     project: Omit<Project, "id">,
     userId: UserId,
   ): ReturnType<ProjectConnector["create"]> {
+    const userIdResult = MongoService.getIdFromString(userId);
+    if (userIdResult.isErr()) {
+      return err(userIdResult.error);
+    }
     const result = await this.mongoService.insertOne("projects", {
       ...project,
-      userId: MongoService.getIdFromString(userId),
+      userId: userIdResult.value,
     });
     return result.map((id) => id as ProjectId);
   }
 
-  update(_project: Project): Promise<Result<void, Error>> {
-    return Promise.resolve(ok(undefined));
+  update(
+    project: Project,
+  ): Promise<Result<void, Deno.errors.NotFound | MongoError | WrongId>> {
+    const idResult = MongoService.getIdFromString(project.id);
+    if (idResult.isErr()) {
+      return Promise.resolve(err(idResult.error));
+    }
+    return this.mongoService.update("projects", project, {
+      _id: idResult.value,
+    });
   }
-  delete(_id: Project["id"]): Promise<Result<void, Error>> {
-    return Promise.resolve(ok(undefined));
+
+  delete(
+    id: Project["id"],
+  ): Promise<Result<void, Deno.errors.NotFound | MongoError | WrongId>> {
+    const idResult = MongoService.getIdFromString(id);
+    if (idResult.isErr()) {
+      return Promise.resolve(err(idResult.error));
+    }
+    return this.mongoService.delete("projects", {
+      _id: idResult.value,
+    });
   }
 }
